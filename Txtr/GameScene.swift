@@ -34,7 +34,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func startGame() {
-        gameTimer = Timer.scheduledTimer(timeInterval: 1.5, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+        gameTimer = Timer.scheduledTimer(timeInterval: 1.25, target: self, selector: #selector(createEnemy), userInfo: nil, repeats: true)
+        
+    }
+    
+    func restartGame() {
+        speed = 1.0
+        createPlayerCar()
+        createRoadLoop()
+        createBackground()
     }
     
     @objc func createEnemy() {
@@ -54,6 +62,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         enemy.physicsBody?.angularVelocity = 0
         enemy.physicsBody?.linearDamping = 0
         enemy.physicsBody?.angularDamping = 0
+    }
+    
+    func removeEnemy() {
+        enemy.removeFromParent()
     }
     
     func createBackground() {
@@ -174,7 +186,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             addChild(explosion)
         }
         
-        
+        gameTimer.invalidate()
         isGameOver = true
         print("Game over: \(isGameOver)")
         playerCar.removeFromParent()

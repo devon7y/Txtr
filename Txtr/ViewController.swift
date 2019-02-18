@@ -30,10 +30,14 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet var letterKeys: [UIButton]!
     @IBOutlet var otherKeys: [UIButton]!
+    @IBOutlet weak var gameOverLabel: UILabel!
+    
+    @IBOutlet weak var gameOverBlurBackground: UIVisualEffectView!
+    @IBOutlet weak var finalScoreLabel: UILabel!
     
     var keyboardOutput = [String]()
     
-    var textMessages = ["Cat", "Dog", "Racoon", "Snake", "Cow", "Monkey", "Bear", "Buffalo", "Moose", "Whale", "Giraffe", "Trout", "Worm", "Mouse", "Jonnie", "Dolphin", "Deer", "Pig", "Rhynosourous", "Chicken", "Shark", "Blobfish", "Robin", "Mockingbird", "Spirit Bear",  "Stratiomyidae"]
+    var textMessages = ["Cat", "Dog", "Racoon", "Snake", "Cow", "Monkey", "Bear", "Buffalo", "Moose", "Whale", "Giraffe", "Trout", "Worm", "Mouse", "Jonnie", "Dolphin", "Deer", "Pig", "Rhynosourous", "Chicken", "Shark", "Blobfish", "Robin", "Mockingbird", "Spirit Bear", "Stratiomyidae", "THE END"]
     
     var unusedMessages = ["I'm almost there!", "Can't talk now, I'm driving.", "Text you later.", "I'm driving right now.", "Where are you?", "I'll call you back later, I'm driving.", "See you at 8:00!", "I'll be there soon!", "I'll be thre in 5 mintues?", "Are you there yet?", "I've arrived!", "Will this app make 1 million dollars?"]
     
@@ -45,6 +49,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
     var timer = Timer()
     var isTimerRunning = false
     
+    var playerWon = false
+    
     var capitalIsToggled = false
     var numbersIsToggled = false
     var periodPressedOnce = false
@@ -52,6 +58,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
        
+        
+        
         timerBlurBackground.layer.cornerRadius = 10
         timerBlurBackground.clipsToBounds = true
         scoreBlurBackground.layer.cornerRadius = 10
@@ -101,14 +109,18 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
     
     @IBAction func startButtonTapped(_ sender: UIButton) {
+        self.startButton.isHidden = true
         startGame()
     }
     
     func startGame() {
         if isTimerRunning == false {
+            outputLabel.text = ""
+            playerPoints = 0
+            currentMesssage = 0
             runTimer()
             game.startGame()
-            self.startButton.isHidden = true
+            
             placeholderLabel.text = textMessages[currentMesssage]
         }
     }
@@ -123,14 +135,27 @@ class ViewController: UIViewController, UITextFieldDelegate {
             timer.invalidate()
             isTimerRunning = false
             placeholderLabel.text = ""
-            outputLabel.text = "GAME OVER, YOU SUCK"
+            UIView.animate(withDuration: 0.5) {
+                self.gameOverBlurBackground.alpha = 1.0
+            }
+            finalScoreLabel.text = "\(playerPoints)"
             game.gameOver()
-//            startButton.isHidden = false
+            
+        } else if textMessages.count - 1 == playerPoints {
+            playerWon = true
+            
+            timer.invalidate()
+            isTimerRunning = false
+            placeholderLabel.text = ""
+            UIView.animate(withDuration: 0.5) {
+                self.gameOverBlurBackground.alpha = 1.0
+            }
+            finalScoreLabel.text = "\(playerPoints)"
+            gameOverLabel.text = "You Won!"
+            game.gameOver()
         } else {
             seconds -= 1
             timerLabel.text = "Time: \(seconds)"
-            //            timerLabel.text = String(seconds)
-            //            labelButton.setTitle(timeString(time: TimeInterval(seconds)), for: UIControlState.normal)
         }
     }
     
@@ -157,6 +182,26 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
+    func restart() {
+        UIView.animate(withDuration: 0.5) {
+            self.gameOverBlurBackground.alpha = 0.0
+        }
+        seconds = 5
+        playerPoints = 0
+        currentMesssage = 0
+        scoreLabel.text = "Points: \(playerPoints)"
+        timerLabel.text = "Time: \(seconds)"
+        outputLabel.text = ""
+        placeholderLabel.text = textMessages[currentMesssage]
+        game.isGameOver = false
+        game.restartGame()
+        game.startGame()
+        game.removeEnemy()
+        runTimer()
+        keyboardOutput.removeAll()
+        //startGame()
+    }
+    
     override var shouldAutorotate: Bool {
         return true
     }
@@ -180,6 +225,10 @@ class ViewController: UIViewController, UITextFieldDelegate {
     @IBAction func rightButtonPressed(_ sender: Any) {
         game.changeToRightLane()
     }
+    @IBAction func restartButtonPressed(_ sender: Any) {
+        restart()
+    }
+    
     @objc func respondToSwipeGesture(gesture: UIGestureRecognizer) {
         if let swipeGesture = gesture as? UISwipeGestureRecognizer {
             switch swipeGesture.direction {
