@@ -34,6 +34,18 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var gameOverBlurBackground: UIVisualEffectView!
     @IBOutlet weak var finalScoreLabel: UILabel!
+    @IBOutlet weak var blueMessageBubble: UIImageView!
+    @IBOutlet weak var greyMessageBubble: UIImageView!
+    @IBOutlet weak var senderLabel: UILabel!
+    @IBOutlet weak var playerLabel: UILabel!
+    @IBOutlet weak var greyMessageBubbleLabel: UILabel!
+    
+    @IBOutlet weak var blueMessageView: UIView!
+    @IBOutlet weak var greyMessageView: UIView!
+    @IBOutlet weak var blueMessageBubbleBottomSpaceToSuperiewConstraint: NSLayoutConstraint!
+    @IBOutlet weak var greyMessageBubbleBottomSpaceToSuperiewConstraint: NSLayoutConstraint!
+    @IBOutlet weak var greyMessageBubbleTrailingToSafeAreaConstraint: NSLayoutConstraint!
+    @IBOutlet weak var blueMessageBubbleTrailingToSafeAreaConstraint: NSLayoutConstraint!
     
     var keyboardOutput = [String]()
     
@@ -45,7 +57,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     var playerPoints = 0
     
-    var seconds = 5
+    var seconds = 10
     var timer = Timer()
     var isTimerRunning = false
     
@@ -57,7 +69,16 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-       
+        
+        
+        
+        
+        // Temporary label names
+        greyMessageBubbleLabel.text = "What animal did you run over?"
+        senderLabel.text = "Mom"
+        
+        
+        
         
         
         timerBlurBackground.layer.cornerRadius = 10
@@ -108,6 +129,12 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        senderLabel.alpha = 0.1
+        greyMessageView.alpha = 0.0
+        greyMessageBubbleTrailingToSafeAreaConstraint.constant += view.bounds.width
+    }
+    
     @IBAction func startButtonTapped(_ sender: UIButton) {
         self.startButton.isHidden = true
         startGame()
@@ -119,9 +146,16 @@ class ViewController: UIViewController, UITextFieldDelegate {
             playerPoints = 0
             currentMesssage = 0
             runTimer()
+            UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
+                self.blueMessageView.alpha = 0.0
+                self.blueMessageBubbleBottomSpaceToSuperiewConstraint.constant += 100.0
+                self.outputLabel.text = ""
+                self.placeholderLabel.text = ""
+                self.view.layoutIfNeeded()
+            }) { (_) in
+                self.animateMessageBubbles()
+            }
             game.startGame()
-            
-            placeholderLabel.text = textMessages[currentMesssage]
         }
     }
     
@@ -162,19 +196,35 @@ class ViewController: UIViewController, UITextFieldDelegate {
     func checkIfCorrect() {
         
         if outputLabel.text == placeholderLabel.text {
-            outputLabel.textColor = #colorLiteral(red: 0.4666666687, green: 0.7647058964, blue: 0.2666666806, alpha: 1)
-            // wait...
-            outputLabel.text = ""
+            greyMessageView.alpha = 0.0
+            // Blue bubble goes up and fades out
+            UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
+                self.blueMessageView.alpha = 0.0
+                self.blueMessageBubbleBottomSpaceToSuperiewConstraint.constant += 100.0
+                self.outputLabel.text = ""
+                self.placeholderLabel.text = ""
+                self.view.layoutIfNeeded()
+            }) { (_) in
+                self.animateMessageBubbles()
+            }
+            
+            UIView.animate(withDuration: 0.2, delay: 0.5, options: .curveEaseOut, animations: {
+                self.senderLabel.alpha = 1.0
+                self.playerLabel.alpha = 0.1
+            }) { (_) in
+                self.animateNameLabels()
+            }
+    
             keyboardOutput.removeAll()
             outputLabel.textColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
             currentMesssage += 1
             playerPoints += 1
             scoreLabel.text = "Points: \(playerPoints)"
             print("Player Points: \(playerPoints)")
-            placeholderLabel.text = textMessages[currentMesssage]
+            
             
             if isTimerRunning == true {
-                seconds += 5
+                seconds += 10
                 timerLabel.text = "Time: \(seconds)"
             }
         } else {
@@ -186,7 +236,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         UIView.animate(withDuration: 0.5) {
             self.gameOverBlurBackground.alpha = 0.0
         }
-        seconds = 5
+        seconds = 10
         playerPoints = 0
         currentMesssage = 0
         scoreLabel.text = "Points: \(playerPoints)"
@@ -197,9 +247,70 @@ class ViewController: UIViewController, UITextFieldDelegate {
         game.restartGame()
         game.startGame()
         game.removeEnemy()
+        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
+            self.blueMessageView.alpha = 0.0
+            self.blueMessageBubbleBottomSpaceToSuperiewConstraint.constant += 100.0
+            self.outputLabel.text = ""
+            self.placeholderLabel.text = ""
+            self.view.layoutIfNeeded()
+        }) { (_) in
+            self.animateMessageBubbles()
+        }
         runTimer()
         keyboardOutput.removeAll()
         //startGame()
+    }
+    
+    func animateNameLabels() {
+        UIView.animate(withDuration: 0.2, delay: 2.5, options: .curveEaseOut, animations: {
+            self.senderLabel.alpha = 0.1
+            self.playerLabel.alpha = 1.0
+        }, completion: nil)
+    }
+    
+    func animateMessageBubbles() {
+        // Grey bubble slides into view and fades in
+        UIView.animate(withDuration: 0.6, delay: 0.0, options: .curveEaseOut, animations: {
+            self.greyMessageBubbleTrailingToSafeAreaConstraint.constant = 62.5
+            self.greyMessageView.alpha = 1.0
+            self.view.layoutIfNeeded()
+        }, completion: nil)
+        // Move blue bubble to left of screen so it can be animated
+        UIView.animate(withDuration: 0, delay: 0.5, options: .curveEaseIn, animations: {
+            self.blueMessageBubbleTrailingToSafeAreaConstraint.constant -= self.view.bounds.width
+            self.blueMessageBubbleBottomSpaceToSuperiewConstraint.constant -= 100.0
+            self.view.layoutIfNeeded()
+        }, completion: nil)
+        // Grey bubble goes up and fades away
+        UIView.animate(withDuration: 0.3, delay: 2.5, options: .curveEaseIn, animations: {
+            self.greyMessageBubbleBottomSpaceToSuperiewConstraint.constant += 100.0
+            self.greyMessageView.alpha = 0.0
+            self.blueMessageView.alpha = 1.0
+            
+            self.placeholderLabel.text = self.textMessages[self.currentMesssage]
+            
+            self.view.layoutIfNeeded()
+        }) { (_) in
+            self.animateGreyMessageBubble()
+        }
+        
+    }
+    
+    func animateGreyMessageBubble() {
+        // Blue bubble comes into view and fades in
+        UIView.animate(withDuration: 0.6, delay: 0, options: .curveEaseOut, animations: {
+            self.blueMessageBubbleTrailingToSafeAreaConstraint.constant = 62.5
+            self.blueMessageView.alpha = 1.0
+            self.greyMessageView.alpha = 0.0
+            self.view.layoutIfNeeded()
+        }, completion: nil)
+        // Move grey bubble to right of screen so it can be animated
+        UIView.animate(withDuration: 0.0, delay: 0.5, options: .curveEaseIn, animations: {
+            self.greyMessageView.alpha = 0.0
+            self.greyMessageBubbleTrailingToSafeAreaConstraint.constant += self.view.bounds.width
+            self.greyMessageBubbleBottomSpaceToSuperiewConstraint.constant -= 100.0
+            self.view.layoutIfNeeded()
+        }, completion: nil)
     }
     
     override var shouldAutorotate: Bool {
@@ -218,13 +329,6 @@ class ViewController: UIViewController, UITextFieldDelegate {
         return true
     }
     
-    @IBAction func leftButtonPressed(_ sender: Any) {
-        game.changeToLeftLane()
-    }
-    
-    @IBAction func rightButtonPressed(_ sender: Any) {
-        game.changeToRightLane()
-    }
     @IBAction func restartButtonPressed(_ sender: Any) {
         restart()
     }
