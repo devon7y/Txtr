@@ -16,6 +16,7 @@
 		3E97429921E1508000B5D978 /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = 3E97429821E1508000B5D978 /* GameScene.sks */; };
 		3E97429B21E1509900B5D978 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3E97429A21E1509900B5D978 /* Assets.xcassets */; };
 		3E97429D21E150A000B5D978 /* hitPlayer.sks in Resources */ = {isa = PBXBuildFile; fileRef = 3E97429C21E150A000B5D978 /* hitPlayer.sks */; };
+		3EEBCE952221FE960024F2EF /* SettingsMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EEBCE942221FE960024F2EF /* SettingsMenuViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		3E97429821E1508000B5D978 /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
 		3E97429A21E1509900B5D978 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3E97429C21E150A000B5D978 /* hitPlayer.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = hitPlayer.sks; sourceTree = "<group>"; };
+		3EEBCE942221FE960024F2EF /* SettingsMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMenuViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 			children = (
 				3E97428021E14F8C00B5D978 /* AppDelegate.swift */,
 				3E97428221E14F8C00B5D978 /* ViewController.swift */,
+				3EEBCE942221FE960024F2EF /* SettingsMenuViewController.swift */,
 				3E97429421E1506200B5D978 /* GameScene.swift */,
 				3E97429821E1508000B5D978 /* GameScene.sks */,
 				3E97429621E1507B00B5D978 /* Actions.sks */,
@@ -150,6 +153,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3EEBCE952221FE960024F2EF /* SettingsMenuViewController.swift in Sources */,
 				3E97429521E1506200B5D978 /* GameScene.swift in Sources */,
 				3E97428321E14F8C00B5D978 /* ViewController.swift in Sources */,
 				3E97428121E14F8C00B5D978 /* AppDelegate.swift in Sources */,

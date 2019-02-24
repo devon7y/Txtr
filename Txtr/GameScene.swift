@@ -11,6 +11,7 @@ import GameplayKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     weak var viewController: ViewController!
+    weak var settingsMenuViewController: SettingsMenuViewController!
     var isGameOver = false
     var gameTimer: Timer!
     var playerCar: SKSpriteNode!

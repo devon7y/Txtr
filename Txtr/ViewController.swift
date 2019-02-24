@@ -13,24 +13,30 @@ import GameplayKit
 // IDEA: Make players final score = scoreLabel * timerLabel
 
 class ViewController: UIViewController, UITextFieldDelegate {
+    
     var game: GameScene!
     
+    let defaults = UserDefaults.standard
+    
+    @IBOutlet weak var txtrLabel: UILabel!
     @IBOutlet weak var blurView: UIVisualEffectView!
     @IBOutlet weak var scoreBlurBackground: UIVisualEffectView!
     @IBOutlet weak var scoreLabel: UILabel!
     @IBOutlet weak var timerBlurBackground: UIVisualEffectView!
     @IBOutlet weak var gameView: SKView!
     @IBOutlet weak var keyboardView: UIView!
+    @IBOutlet weak var menuBlurView: UIVisualEffectView!
+    @IBOutlet weak var gameCenterButton: UIButton!
     
     @IBOutlet weak var timerLabel: UILabel!
     
-    @IBOutlet weak var startButton: UIButton!
     @IBOutlet weak var outputLabel: UILabel!
     @IBOutlet weak var placeholderLabel: UILabel!
     
     @IBOutlet var letterKeys: [UIButton]!
     @IBOutlet var otherKeys: [UIButton]!
     @IBOutlet weak var gameOverLabel: UILabel!
+    @IBOutlet weak var scoreTextLabel: UILabel!
     
     @IBOutlet weak var gameOverBlurBackground: UIVisualEffectView!
     @IBOutlet weak var finalScoreLabel: UILabel!
@@ -39,13 +45,24 @@ class ViewController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var senderLabel: UILabel!
     @IBOutlet weak var playerLabel: UILabel!
     @IBOutlet weak var greyMessageBubbleLabel: UILabel!
+    @IBOutlet weak var restartButton: UIButton!
     
+    @IBOutlet weak var returnToMenuButton: UIButton!
     @IBOutlet weak var blueMessageView: UIView!
     @IBOutlet weak var greyMessageView: UIView!
     @IBOutlet weak var blueMessageBubbleBottomSpaceToSuperiewConstraint: NSLayoutConstraint!
     @IBOutlet weak var greyMessageBubbleBottomSpaceToSuperiewConstraint: NSLayoutConstraint!
     @IBOutlet weak var greyMessageBubbleTrailingToSafeAreaConstraint: NSLayoutConstraint!
     @IBOutlet weak var blueMessageBubbleTrailingToSafeAreaConstraint: NSLayoutConstraint!
+    
+    @IBOutlet weak var nightOrDayIndicatorImageView: UIImageView!
+    
+    @IBOutlet weak var storyModeButton: UIButton!
+    
+    @IBOutlet weak var endlessModeButton: UIButton!
+    
+    @IBOutlet weak var playerVsPlayerModeButton: UIButton!
+    @IBOutlet weak var settingsButton: UIButton!
     
     var keyboardOutput = [String]()
     
@@ -70,74 +87,38 @@ class ViewController: UIViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        
-        
+        configureViews()
+        configureGestureRecognizers()
         
         // Temporary label names
         greyMessageBubbleLabel.text = "What animal did you run over?"
         senderLabel.text = "Mom"
         
+        // Temporary
+//        var preferredStatusBarStyle: UIStatusBarStyle {
+//            return .lightContent
+//        }
         
         
         
-        
-        timerBlurBackground.layer.cornerRadius = 10
-        timerBlurBackground.clipsToBounds = true
-        scoreBlurBackground.layer.cornerRadius = 10
-        scoreBlurBackground.clipsToBounds = true
-        
-        if let view = gameView {
-            // Load the SKScene from 'GameScene.sks'
-            if let scene = SKScene(fileNamed: "GameScene") {
-                // Set the scale mode to scale to fit the window
-                scene.scaleMode = .aspectFill
-                game = scene as? GameScene
-                game.viewController = self
-                // Present the scene
-                view.presentScene(scene)
-            }
-            
-            view.ignoresSiblingOrder = true
-            
-            view.showsFPS = false
-            view.showsNodeCount = false
-            view.showsPhysics = false
-        }
-        
-        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(self.respondToSwipeGesture))
-        swipeRight.direction = .right
-        blurView.addGestureRecognizer(swipeRight)
-        keyboardView.addGestureRecognizer(swipeRight)
-        
-        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(self.respondToSwipeGesture))
-        swipeLeft.direction = .left
-        blurView.addGestureRecognizer(swipeLeft)
-        keyboardView.addGestureRecognizer(swipeLeft)
-        
-        for key in letterKeys {
-            //            key.layer.cornerRadius = 0
-            //            key.clipsToBounds = true
-            let insets = UIEdgeInsets(top: 5, left: 3, bottom: 5, right: 3)
-            key.imageEdgeInsets = insets
-            
-        }
-        for key in otherKeys {
-            //            key.layer.cornerRadius = 0
-            //            key.clipsToBounds = true
-            let insets = UIEdgeInsets(top: 5, left: 3, bottom: 5, right: 3)
-            key.imageEdgeInsets = insets
-        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
         senderLabel.alpha = 0.1
         greyMessageView.alpha = 0.0
         greyMessageBubbleTrailingToSafeAreaConstraint.constant += view.bounds.width
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+        if defaults.bool(forKey: "isDayMode") == true {
+            toggleDayMode()
+            print("it is day")
+        } else {
+            toggleNightMode()
+        }
     }
     
-    @IBAction func startButtonTapped(_ sender: UIButton) {
-        self.startButton.isHidden = true
-        startGame()
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
     }
     
     func startGame() {
@@ -147,6 +128,20 @@ class ViewController: UIViewController, UITextFieldDelegate {
             currentMesssage = 0
             runTimer()
             UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
+                self.keyboardView.alpha = 1.0
+                self.blurView.alpha = 1.0
+                self.timerBlurBackground.alpha = 1.0
+                self.scoreBlurBackground.alpha = 1.0
+                self.blueMessageView.alpha = 1.0
+                self.menuBlurView.alpha = 0.0
+//                self.storyModeButton.alpha = 0.0
+//                self.endlessModeButton.alpha = 0.0
+//                self.playerVsPlayerModeButton.alpha = 0.0
+//                self.settingsButton.alpha = 0.0
+//                self.gameCenterButton.alpha = 0.0
+//                self.txtrLabel.alpha = 0.0
+//                self.nightOrDayIndicatorImageView.alpha = 0.0
+                
                 self.blueMessageView.alpha = 0.0
                 self.blueMessageBubbleBottomSpaceToSuperiewConstraint.constant += 100.0
                 self.outputLabel.text = ""
@@ -261,6 +256,118 @@ class ViewController: UIViewController, UITextFieldDelegate {
         //startGame()
     }
     
+    func returnToMenu() {
+        UIView.animate(withDuration: 0.5) {
+            self.gameOverBlurBackground.alpha = 0.0
+            self.menuBlurView.alpha = 1.0
+            self.keyboardView.alpha = 0.0
+            self.blurView.alpha = 0.0
+            self.timerBlurBackground.alpha = 0.0
+            self.scoreBlurBackground.alpha = 0.0
+            self.blueMessageView.alpha = 0.0
+        }
+    }
+    
+    func configureViews() {
+        keyboardView.alpha = 0.0
+        blurView.alpha = 0.0
+        timerBlurBackground.alpha = 0.0
+        scoreBlurBackground.alpha = 0.0
+        blueMessageView.alpha = 0.0
+        timerBlurBackground.layer.cornerRadius = 10
+        timerBlurBackground.clipsToBounds = true
+        scoreBlurBackground.layer.cornerRadius = 10
+        scoreBlurBackground.clipsToBounds = true
+        storyModeButton.layer.cornerRadius = 10
+        storyModeButton.clipsToBounds = true
+        endlessModeButton.layer.cornerRadius = 10
+        endlessModeButton.clipsToBounds = true
+        playerVsPlayerModeButton.layer.cornerRadius = 10
+        playerVsPlayerModeButton.clipsToBounds = true
+        restartButton.layer.cornerRadius = 10
+        restartButton.clipsToBounds = true
+        returnToMenuButton.layer.cornerRadius = 10
+        returnToMenuButton.clipsToBounds = true
+        
+        if let view = gameView {
+            // Load the SKScene from 'GameScene.sks'
+            if let scene = SKScene(fileNamed: "GameScene") {
+                // Set the scale mode to scale to fit the window
+                scene.scaleMode = .aspectFill
+                game = scene as? GameScene
+                game.viewController = self
+                // Present the scene
+                view.presentScene(scene)
+            }
+            
+            view.ignoresSiblingOrder = true
+            
+            view.showsFPS = false
+            view.showsNodeCount = false
+            view.showsPhysics = false
+        }
+        
+        for key in letterKeys {
+            let insets = UIEdgeInsets(top: 5, left: 3, bottom: 5, right: 3)
+            key.imageEdgeInsets = insets
+            
+        }
+        for key in otherKeys {
+            let insets = UIEdgeInsets(top: 5, left: 3, bottom: 5, right: 3)
+            key.imageEdgeInsets = insets
+        }
+    }
+    
+    func configureGestureRecognizers() {
+        let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(self.respondToSwipeGesture))
+        swipeRight.direction = .right
+        blurView.addGestureRecognizer(swipeRight)
+        keyboardView.addGestureRecognizer(swipeRight)
+        
+        let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(self.respondToSwipeGesture))
+        swipeLeft.direction = .left
+        blurView.addGestureRecognizer(swipeLeft)
+        keyboardView.addGestureRecognizer(swipeLeft)
+    }
+    
+    func toggleDayMode() {
+//        var preferredStatusBarStyle: UIStatusBarStyle {
+//            return .default
+//        }
+        settingsButton.setImage(UIImage(named: "settings_icon_day"), for: .normal)
+        txtrLabel.textColor = UIColor.black
+        nightOrDayIndicatorImageView.image = UIImage(named: "txtr_sun_icon")
+        // blurView.effect = UIBlurEffect(style: .extraLight)
+        menuBlurView.effect = UIBlurEffect(style: .extraLight)
+        scoreBlurBackground.effect = UIBlurEffect(style: .extraLight)
+        scoreLabel.textColor = UIColor.black
+        timerBlurBackground.effect = UIBlurEffect(style: .extraLight)
+        timerLabel.textColor = UIColor.black
+        gameOverBlurBackground.effect = UIBlurEffect(style: .extraLight)
+        gameOverLabel.textColor = UIColor.black
+        scoreTextLabel.textColor = UIColor.black
+        finalScoreLabel.textColor = UIColor.black
+    }
+    
+    func toggleNightMode() {
+//        var preferredStatusBarStyle: UIStatusBarStyle {
+//            return .lightContent
+//        }
+        settingsButton.setImage(UIImage(named: "settings_icon_night"), for: .normal)
+        txtrLabel.textColor = UIColor.white
+        nightOrDayIndicatorImageView.image = UIImage(named: "txtr_moon_icon")
+        // blurView.effect = UIBlurEffect(style: .dark)
+        menuBlurView.effect = UIBlurEffect(style: .dark)
+        scoreBlurBackground.effect = UIBlurEffect(style: .dark)
+        scoreLabel.textColor = UIColor.white
+        timerBlurBackground.effect = UIBlurEffect(style: .dark)
+        timerLabel.textColor = UIColor.white
+        gameOverBlurBackground.effect = UIBlurEffect(style: .dark)
+        gameOverLabel.textColor = UIColor.white
+        scoreTextLabel.textColor = UIColor.white
+        finalScoreLabel.textColor = UIColor.white
+    }
+    
     func animateNameLabels() {
         UIView.animate(withDuration: 0.2, delay: 2.5, options: .curveEaseOut, animations: {
             self.senderLabel.alpha = 0.1
@@ -325,13 +432,31 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
-    override var prefersStatusBarHidden: Bool {
-        return true
-    }
-    
     @IBAction func restartButtonPressed(_ sender: Any) {
         restart()
     }
+    
+    @IBAction func returnToMenuButtonWasPressed(_ sender: Any) {
+        returnToMenu()
+    }
+    
+    @IBAction func storyModeButtonPressed(_ sender: Any) {
+    }
+    
+    @IBAction func endlessModeButtonPressed(_ sender: Any) {
+        startGame()
+    }
+    
+    @IBAction func playerVsPlayerButtonPressed(_ sender: Any) {
+    }
+    
+    @IBAction func gameCenterButtonPressed(_ sender: Any) {
+    }
+    
+    
+    
+    
+    
     
     @objc func respondToSwipeGesture(gesture: UIGestureRecognizer) {
         if let swipeGesture = gesture as? UISwipeGestureRecognizer {
