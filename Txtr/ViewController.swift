@@ -9,6 +9,8 @@
 import UIKit
 import SpriteKit
 import GameplayKit
+import Alamofire
+import SwiftyJSON
 
 // IDEA: Make players final score = scoreLabel * timerLabel
 
@@ -66,13 +68,18 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     var keyboardOutput = [String]()
     
-    var textMessages = ["Cat", "Dog", "Racoon", "Snake", "Cow", "Monkey", "Bear", "Buffalo", "Moose", "Whale", "Giraffe", "Trout", "Worm", "Mouse", "Jonnie", "Dolphin", "Deer", "Pig", "Rhynosourous", "Chicken", "Shark", "Blobfish", "Robin", "Mockingbird", "Spirit Bear", "Stratiomyidae", "THE END"]
+    var randomTextMessages = ["no"]
     
     var unusedMessages = ["I'm almost there!", "Can't talk now, I'm driving.", "Text you later.", "I'm driving right now.", "Where are you?", "I'll call you back later, I'm driving.", "See you at 8:00!", "I'll be there soon!", "I'll be thre in 5 mintues?", "Are you there yet?", "I've arrived!", "Will this app make 1 million dollars?"]
     
-    var currentMesssage = 0
+    var currentWordFromJSON = ""
+    var processedJSON: JSON = []
+    let url = "https://api.wordnik.com/v4/words.json/randomWords?hasDictionaryDef=true&maxCorpusCount=-1&minDictionaryCount=1&maxDictionaryCount=-1&minLength=2&maxLength=10&limit=100&api_key=c4be6e0d7564006d8d12902d33e0464440a320e3364dd62ee"
     
+    var currentMesssage = 0
+    var currentWordNumber = 0
     var playerPoints = 0
+    
     
     var seconds = 10
     var timer = Timer()
@@ -91,13 +98,16 @@ class ViewController: UIViewController, UITextFieldDelegate {
         configureGestureRecognizers()
         
         // Temporary label names
-        greyMessageBubbleLabel.text = "What animal did you run over?"
+        
         senderLabel.text = "Mom"
         
         // Temporary
 //        var preferredStatusBarStyle: UIStatusBarStyle {
 //            return .lightContent
 //        }
+        
+        // Perhaps get JSON only when endless mode is chosen
+        getJSON(url: url)
         
         
         
@@ -125,7 +135,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         if isTimerRunning == false {
             outputLabel.text = ""
             playerPoints = 0
-            currentMesssage = 0
+            currentMesssage = 1
             runTimer()
             UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
                 self.keyboardView.alpha = 1.0
@@ -146,6 +156,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
                 self.blueMessageBubbleBottomSpaceToSuperiewConstraint.constant += 100.0
                 self.outputLabel.text = ""
                 self.placeholderLabel.text = ""
+                self.greyMessageBubbleLabel.text = "Message number \(self.currentMesssage):"
                 self.view.layoutIfNeeded()
             }) { (_) in
                 self.animateMessageBubbles()
@@ -164,13 +175,15 @@ class ViewController: UIViewController, UITextFieldDelegate {
             timer.invalidate()
             isTimerRunning = false
             placeholderLabel.text = ""
+            outputLabel.textColor = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
             UIView.animate(withDuration: 0.5) {
                 self.gameOverBlurBackground.alpha = 1.0
             }
+            getJSON(url: url)
             finalScoreLabel.text = "\(playerPoints)"
             game.gameOver()
             
-        } else if textMessages.count - 1 == playerPoints {
+        } else if processedJSON.count - 1 == playerPoints {
             playerWon = true
             
             timer.invalidate()
@@ -188,9 +201,47 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
+    func getJSON(url: String) {
+        
+        Alamofire.request(url, method: .get).responseJSON {
+            response in
+            if response.result.isSuccess {
+                print("Success")
+                
+                let json: JSON = JSON(response.result.value!)
+                self.processJSON(json: json)
+                print(json)
+                print("getJSON called")
+            }
+            else {
+                print("Error getting JSON")
+            }
+        }
+    }
+    
+    func processJSON(json: JSON) {
+        
+        currentWordFromJSON = json[currentWordNumber]["word"].stringValue.capitalizingFirstLetter()
+        print(currentWordFromJSON)
+        
+        processedJSON = json
+        print(processedJSON.count)
+    }
+    
     func checkIfCorrect() {
         
         if outputLabel.text == placeholderLabel.text {
+            
+            keyboardOutput.removeAll()
+            outputLabel.textColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+            currentWordNumber += 1
+            currentWordFromJSON = processedJSON[currentWordNumber]["word"].stringValue.capitalizingFirstLetter()
+            playerPoints += 1
+            currentMesssage += 1
+            scoreLabel.text = "Score: \(playerPoints)"
+            print("Player Points: \(playerPoints)")
+            self.greyMessageBubbleLabel.text = "Message number \(currentMesssage):"
+            
             greyMessageView.alpha = 0.0
             // Blue bubble goes up and fades out
             UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
@@ -210,16 +261,11 @@ class ViewController: UIViewController, UITextFieldDelegate {
                 self.animateNameLabels()
             }
     
-            keyboardOutput.removeAll()
-            outputLabel.textColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-            currentMesssage += 1
-            playerPoints += 1
-            scoreLabel.text = "Points: \(playerPoints)"
-            print("Player Points: \(playerPoints)")
+            
             
             
             if isTimerRunning == true {
-                seconds += 10
+                seconds += 8
                 timerLabel.text = "Time: \(seconds)"
             }
         } else {
@@ -233,16 +279,16 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         seconds = 10
         playerPoints = 0
-        currentMesssage = 0
-        scoreLabel.text = "Points: \(playerPoints)"
+        currentMesssage = 1
+        scoreLabel.text = "Score: \(playerPoints)"
         timerLabel.text = "Time: \(seconds)"
         outputLabel.text = ""
-        placeholderLabel.text = textMessages[currentMesssage]
+        //placeholderLabel.text = randomTextMessages[currentMesssage]
         game.isGameOver = false
         game.restartGame()
         game.startGame()
         game.removeEnemy()
-        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
+        UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseIn, animations: {
             self.blueMessageView.alpha = 0.0
             self.blueMessageBubbleBottomSpaceToSuperiewConstraint.constant += 100.0
             self.outputLabel.text = ""
@@ -369,7 +415,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
     
     func animateNameLabels() {
-        UIView.animate(withDuration: 0.2, delay: 2.5, options: .curveEaseOut, animations: {
+        UIView.animate(withDuration: 0.2, delay: 2.1, options: .curveEaseOut, animations: {
             self.senderLabel.alpha = 0.1
             self.playerLabel.alpha = 1.0
         }, completion: nil)
@@ -377,24 +423,24 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     func animateMessageBubbles() {
         // Grey bubble slides into view and fades in
-        UIView.animate(withDuration: 0.6, delay: 0.0, options: .curveEaseOut, animations: {
+        UIView.animate(withDuration: 0.5, delay: 0.0, options: .curveEaseOut, animations: {
             self.greyMessageBubbleTrailingToSafeAreaConstraint.constant = 62.5
             self.greyMessageView.alpha = 1.0
             self.view.layoutIfNeeded()
         }, completion: nil)
         // Move blue bubble to left of screen so it can be animated
-        UIView.animate(withDuration: 0, delay: 0.5, options: .curveEaseIn, animations: {
+        UIView.animate(withDuration: 0, delay: 0.1, options: .curveEaseIn, animations: {
             self.blueMessageBubbleTrailingToSafeAreaConstraint.constant -= self.view.bounds.width
             self.blueMessageBubbleBottomSpaceToSuperiewConstraint.constant -= 100.0
             self.view.layoutIfNeeded()
         }, completion: nil)
         // Grey bubble goes up and fades away
-        UIView.animate(withDuration: 0.3, delay: 2.5, options: .curveEaseIn, animations: {
+        UIView.animate(withDuration: 0.3, delay: 2, options: .curveEaseIn, animations: {
             self.greyMessageBubbleBottomSpaceToSuperiewConstraint.constant += 100.0
             self.greyMessageView.alpha = 0.0
             self.blueMessageView.alpha = 1.0
             
-            self.placeholderLabel.text = self.textMessages[self.currentMesssage]
+            self.placeholderLabel.text = self.currentWordFromJSON
             
             self.view.layoutIfNeeded()
         }) { (_) in
@@ -405,7 +451,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     func animateGreyMessageBubble() {
         // Blue bubble comes into view and fades in
-        UIView.animate(withDuration: 0.6, delay: 0, options: .curveEaseOut, animations: {
+        UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseOut, animations: {
             self.blueMessageBubbleTrailingToSafeAreaConstraint.constant = 62.5
             self.blueMessageView.alpha = 1.0
             self.greyMessageView.alpha = 0.0
@@ -438,6 +484,15 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     @IBAction func returnToMenuButtonWasPressed(_ sender: Any) {
         returnToMenu()
+        seconds = 10
+        playerPoints = 0
+        currentMesssage = 1
+        scoreLabel.text = "Score: \(playerPoints)"
+        timerLabel.text = "Time: \(seconds)"
+        outputLabel.text = ""
+        game.restartGame()
+        game.removeEnemy()
+        keyboardOutput.removeAll()
     }
     
     @IBAction func storyModeButtonPressed(_ sender: Any) {
@@ -581,6 +636,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
         checkIfCorrect()
         return true
     }
+    
+    
     
     
     @IBAction func qKeyPressed(_ sender: Any) {
@@ -1070,3 +1127,12 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
 }
 
+extension String {
+    func capitalizingFirstLetter() -> String {
+        return prefix(1).uppercased() + self.lowercased().dropFirst()
+    }
+    
+    mutating func capitalizeFirstLetter() {
+        self = self.capitalizingFirstLetter()
+    }
+}
