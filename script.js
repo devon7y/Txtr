@@ -30,6 +30,8 @@ const finalCoinValue = document.getElementById("finalCoinValue");
 const finalTextValue = document.getElementById("finalTextValue");
 const finalBestValue = document.getElementById("finalBestValue");
 const gameOverSummary = document.getElementById("gameOverSummary");
+const finalWpmValue = document.getElementById("finalWpmValue");
+const finalAccuracyValue = document.getElementById("finalAccuracyValue");
 
 const LANE_COUNT = 5;
 const VIEW_DISTANCE = 120;
@@ -623,6 +625,10 @@ const game = {
   expectedReply: "",
   awaitingReply: false,
   typingStartTime: null,
+  totalCharsTyped: 0,
+  totalTypingMs: 0,
+  totalCorrectChars: 0,
+  totalExpectedChars: 0,
   timers: [],
   shake: 0,
 };
@@ -796,6 +802,10 @@ function submitReply() {
   game.lineIndex += 1;
   game.texts += 1;
   game.score += scoreDelta;
+  game.totalCharsTyped += sentReply.length;
+  game.totalTypingMs += game.typingStartTime ? (performance.now() - game.typingStartTime) : 0;
+  game.totalCorrectChars += analysis.correct;
+  game.totalExpectedChars += analysis.maxLength;
   setComposerMode("review");
   setComposerMirrorMarkup(buildReviewMarkup(analysis));
   composerNote.textContent =
@@ -954,6 +964,10 @@ function triggerCrash(obstacle) {
   finalCoinValue.textContent = String(game.coins);
   finalTextValue.textContent = String(game.texts);
   finalBestValue.textContent = String(game.best);
+  const avgWpm = game.totalTypingMs > 0 ? Math.round((game.totalCharsTyped / 5) / (game.totalTypingMs / 60000)) : 0;
+  const accuracy = game.totalExpectedChars > 0 ? Math.round((game.totalCorrectChars / game.totalExpectedChars) * 100) : 0;
+  finalWpmValue.textContent = avgWpm > 0 ? String(avgWpm) : "—";
+  finalAccuracyValue.textContent = game.totalExpectedChars > 0 ? `${accuracy}%` : "—";
   gameOverSummary.textContent = `You made it ${Math.round(game.distance)} meters, sent ${game.texts} texts, and still folded the front bumper like a cheap lawn chair.`;
 
   scheduleTask(() => {
@@ -971,6 +985,10 @@ function startGame() {
   game.distance = 0;
   game.coins = 0;
   game.texts = 0;
+  game.totalCharsTyped = 0;
+  game.totalTypingMs = 0;
+  game.totalCorrectChars = 0;
+  game.totalExpectedChars = 0;
   game.currentLane = 2;
   game.targetLane = 2;
   game.safeLane = 2;
@@ -1173,7 +1191,7 @@ function drawRoad() {
       const farDepth = Math.max(0, nearDepth - markerLength);
       const far = projectDepth(farDepth, divider);
       const near = projectDepth(nearDepth, divider);
-      ctx.strokeStyle = divider === 2.5 ? "rgba(255, 214, 96, 0.9)" : "rgba(255, 255, 255, 0.82)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.82)";
       ctx.lineWidth = Math.max(1, near.scale * 4.1);
       ctx.beginPath();
       ctx.moveTo(far.x, far.y);
