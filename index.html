@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Txtr</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="scene-glow scene-glow--one"></div>
+      <div class="scene-glow scene-glow--two"></div>
+
+      <main class="game-frame">
+        <header class="topbar card">
+          <div class="brand-lockup">
+            <div class="brand-mark">Txtr</div>
+            <div class="brand-copy">
+              <h1>Texting. Drifting. Regrettable multitasking.</h1>
+              <p>Drive the red supercar, dodge traffic, collect coins, and fire off scripted replies from the road overlay.</p>
+            </div>
+          </div>
+
+          <div class="score-strip">
+            <div class="stat-pill">
+              <span>Score</span>
+              <strong id="scoreValue">0</strong>
+            </div>
+            <div class="stat-pill">
+              <span>Coins</span>
+              <strong id="coinValue">0</strong>
+            </div>
+            <div class="stat-pill">
+              <span>Texts</span>
+              <strong id="textValue">0</strong>
+            </div>
+            <div class="stat-pill">
+              <span>Best</span>
+              <strong id="bestValue">0</strong>
+            </div>
+          </div>
+        </header>
+
+        <section class="layout">
+          <section class="road-stage card">
+            <canvas id="gameCanvas" aria-label="Driving game canvas"></canvas>
+
+            <div class="road-hud">
+              <div class="road-indicator">
+                <span>Speed</span>
+                <strong id="speedValue">62 mph</strong>
+              </div>
+              <div class="road-indicator">
+                <span>Lane</span>
+                <strong id="laneValue">3 / 5</strong>
+              </div>
+              <div class="road-indicator">
+                <span>Thread</span>
+                <strong id="threadValue">Standing By</strong>
+              </div>
+              <div class="road-indicator">
+                <span>WPM</span>
+                <strong id="wpmValue">—</strong>
+              </div>
+            </div>
+
+            <div class="message-overlay">
+              <div class="message-bubble message-bubble--incoming" id="incomingBubble">Press Start to begin.</div>
+
+              <form class="composer composer--road" id="composer">
+                <div class="composer-field composer-field--road">
+                  <div class="composer-mirror" id="replyMirror" aria-hidden="true"></div>
+                  <input
+                    id="replyInput"
+                    type="text"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    disabled
+                  />
+                </div>
+                <button id="sendButton" type="submit" disabled>Send</button>
+              </form>
+
+              <div class="composer-note" id="composerNote">
+                Left and right arrow keys still steer while the message field is focused.
+              </div>
+            </div>
+
+            <div class="steer-pad">
+              <button id="leftButton" type="button" aria-label="Move left">Left</button>
+              <button id="rightButton" type="button" aria-label="Move right">Right</button>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <section class="overlay visible" id="startScreen">
+        <div class="overlay-card">
+          <p class="overlay-eyebrow">TXTR</p>
+          <h2>Drive first. Text second. Do both anyway.</h2>
+          <p class="overlay-copy">
+            You are in a red supercar on the wrong side of a five-lane highway. Shift lanes with the arrow
+            keys, scoop up coins, and complete a string of absurd conversations by typing each scripted reply.
+          </p>
+
+          <div class="overlay-grid">
+            <div class="overlay-item">
+              <strong>Steer</strong>
+              <span>Use the left and right arrow keys or the on-screen buttons.</span>
+            </div>
+            <div class="overlay-item">
+              <strong>Type</strong>
+              <span>The scripted reply sits in the message field. Wrong or missing characters cost 10 points each.</span>
+            </div>
+            <div class="overlay-item">
+              <strong>Survive</strong>
+              <span>The road gets faster forever. One crash ends the run.</span>
+            </div>
+          </div>
+
+          <div class="overlay-footer">
+            <div class="best-readout">
+              <span>Best score</span>
+              <strong id="startBestValue">0</strong>
+            </div>
+            <button class="primary-button" id="startButton" type="button">Start Game</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="overlay" id="gameOverScreen">
+        <div class="overlay-card overlay-card--compact">
+          <p class="overlay-eyebrow">RUN OVER</p>
+          <h2>You texted into oncoming traffic.</h2>
+          <p class="overlay-copy" id="gameOverSummary">Score pending.</p>
+
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span>Score</span>
+              <strong id="finalScoreValue">0</strong>
+            </div>
+            <div class="summary-item">
+              <span>Coins</span>
+              <strong id="finalCoinValue">0</strong>
+            </div>
+            <div class="summary-item">
+              <span>Texts</span>
+              <strong id="finalTextValue">0</strong>
+            </div>
+            <div class="summary-item">
+              <span>Best</span>
+              <strong id="finalBestValue">0</strong>
+            </div>
+          </div>
+
+          <button class="primary-button" id="restartButton" type="button">Try Again</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
