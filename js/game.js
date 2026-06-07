@@ -968,7 +968,8 @@ function drawPlayer() {
   const proj = project(PLAYER_DEPTH, game.currentLane);
   const steer = game.currentLane - game.targetLane;
   const bob = Math.sin(game.time * 10) * proj.laneUnit * 0.012;
-  const rot = clamp(steer * 0.12, -0.18, 0.18);
+  // gentler lean for the hero car so outer lanes don't look like a sideways drift
+  const rot = laneTilt(proj.x, proj.y) * 0.5 + clamp(steer * 0.12, -0.18, 0.18);
   const car = CARS.find((c) => c.id === profile.selectedCar) || CARS[0];
   let pal = { body: car.body, shade: car.shade, roof: car.roof };
   if (car.rainbow) {
@@ -1005,6 +1006,15 @@ function drawPlayer() {
   ctx.restore();
 }
 
+// A car lying on the road points along its lane, which in perspective converges
+// to the vanishing point (screen-center, horizon). Tilting the sprite toward
+// that point makes side-lane cars sit correctly in their lanes instead of
+// standing bolt-upright and looking off-center.
+function laneTilt(px, py) {
+  const vpx = game.width / 2, vpy = game.height * HORIZON_RATIO;
+  return Math.atan2(vpx - px, py - vpy);
+}
+
 function drawObjects() {
   const items = [];
   for (const car of game.traffic) {
@@ -1021,7 +1031,7 @@ function drawObjects() {
     const proj = project(o.depth, o.lane);
     if (it.kind === "car") {
       const bob = Math.sin(game.time * 7 + o.bob) * proj.laneUnit * 0.02;
-      drawCar(proj.x, proj.y + bob, proj.laneUnit, o.pal, "front", game.time);
+      drawCar(proj.x, proj.y + bob, proj.laneUnit, o.pal, "front", game.time, { rot: laneTilt(proj.x, proj.y) });
     } else if (it.kind === "coin") {
       drawCoin(proj.x, proj.y - proj.laneUnit * 0.5, proj.laneUnit, o.spin);
     } else {
@@ -1269,15 +1279,21 @@ canvas.addEventListener("pointerdown", (e) => {
 
 // horizontal trackpad swipe (two-finger swipe / horizontal scroll) changes lanes —
 // lets laptop players steer without the A/D keys they need for typing.
-let swipeCooldown = 0;
+// One lane per swipe, no matter how far/long: a continuous stream of wheel
+// events (incl. momentum) counts as a single gesture; we only steer once per
+// gesture and reset after a pause. deltaX is inverted to match Mac natural
+// scrolling (fingers move right -> car moves right).
+let lastWheelT = 0, wheelGestureUsed = false;
 window.addEventListener("wheel", (e) => {
   if (game.state !== "playing") return;
   if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return; // ignore vertical scroll
   e.preventDefault();
   const now = performance.now();
-  if (now < swipeCooldown) return;
-  if (e.deltaX > 8) { moveLane(1); swipeCooldown = now + 180; }
-  else if (e.deltaX < -8) { moveLane(-1); swipeCooldown = now + 180; }
+  if (now - lastWheelT > 150) wheelGestureUsed = false; // gap -> new gesture
+  lastWheelT = now;
+  if (wheelGestureUsed || Math.abs(e.deltaX) < 6) return;
+  wheelGestureUsed = true;
+  moveLane(e.deltaX < 0 ? 1 : -1);
 }, { passive: false });
 
 /* --- Buttons -------------------------------------------------------------- */
