@@ -203,7 +203,7 @@ const TRAFFIC_PALETTE = [
 // send: per-reply time limit = base + per*chars (seconds). null = no timer.
 const DIFFICULTIES = {
   chill:  { id: "chill",  name: "Chill",   spawnBase: 1.35, ramp: 0.16, doubleChance: 0.18, startSpeed: 26, send: null,                  label: "Relaxed traffic, no send timer" },
-  normal: { id: "normal", name: "Normal",  spawnBase: 1.10, ramp: 0.26, doubleChance: 0.40, startSpeed: 30, send: { base: 4.0, per: 0.22 }, label: "Rush hour, type before time runs out" },
+  normal: { id: "normal", name: "Normal",  spawnBase: 1.10, ramp: 0.26, doubleChance: 0.40, startSpeed: 30, send: { base: 8.0, per: 0.44 }, label: "Rush hour, type before time runs out" },
   mayhem: { id: "mayhem", name: "Mayhem",  spawnBase: 0.92, ramp: 0.38, doubleChance: 0.62, startSpeed: 36, send: { base: 3.0, per: 0.16 }, label: "Dense traffic, tight send timer" },
 };
 

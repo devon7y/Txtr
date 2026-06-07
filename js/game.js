@@ -39,8 +39,8 @@ const CAM_DEPTH = 1.0;                              // perspective strength
 const PLAYER_DEPTH = 0.6;                           // keeps the car above the dock
 const SPAWN_DEPTH = 14;                             // where traffic / coins appear
 const ROAD_FAR = 30;                                // road drawn beyond spawn
-const HALF_LANES = LANE_COUNT / 2;                  // road edge = 2.5 lane-units
-const LANE_SPREAD = 0.205;                          // screen px per lane-unit per scale per width
+const HALF_LANES = 2.3;                             // road edge in lane-units (tight shoulder so outer lanes sit near the edges)
+const LANE_SPREAD = 0.215;                          // screen px per lane-unit per scale per width
 const HORIZON_RATIO = 0.30;
 const DEPTH_PER_SPEED = 0.15;                       // world closing speed -> depth/sec
 const COLLIDE_LANE = 0.55;
@@ -874,7 +874,7 @@ function drawLaneDashes(lane) {
 // angle. The near vertical end-face is shaded darker; the top surface (roof/
 // hood) catches light. facing "rear" = player (taillights); "front" = oncoming.
 function drawCar(x, y, laneUnit, pal, facing, t, opts = {}) {
-  const W = laneUnit * 0.8;
+  const W = laneUnit * 0.72;
   if (W < 4) return;
   const H = W * 1.5;
   const lw = Math.max(2, W * 0.07);
