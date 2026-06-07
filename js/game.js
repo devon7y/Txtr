@@ -16,12 +16,13 @@ const el = {
   threadName: $("threadName"), btnPause: $("btnPause"), btnMute: $("btnMute"),
   fxLayer: $("fxLayer"), bannerLayer: $("bannerLayer"), pickupRow: $("pickupRow"),
   dock: $("dock"), incoming: $("incoming"), typeBox: $("typeBox"), typeInput: $("typeInput"),
+  sendTimer: $("sendTimer"), sendTimerFill: $("sendTimerFill"),
   steerLeft: $("steerLeft"), steerRight: $("steerRight"),
   // screens
   screenStart: $("screenStart"), screenPause: $("screenPause"), screenOver: $("screenOver"),
   screenGarage: $("screenGarage"), screenTrophies: $("screenTrophies"),
   startBest: $("startBest"), startCoins: $("startCoins"), dailyState: $("dailyState"),
-  btnPlay: $("btnPlay"), btnGarage: $("btnGarage"), btnTrophies: $("btnTrophies"), btnDaily: $("btnDaily"),
+  btnPlay: $("btnPlay"), btnGarage: $("btnGarage"), btnTrophies: $("btnTrophies"), btnDaily: $("btnDaily"), modeDesc: $("modeDesc"),
   btnResume: $("btnResume"), btnRestartPause: $("btnRestartPause"), btnMenuPause: $("btnMenuPause"),
   overTitle: $("overTitle"), overScore: $("overScore"), overNewBest: $("overNewBest"),
   overCoinsEarned: $("overCoinsEarned"), overTexts: $("overTexts"), overNear: $("overNear"),
@@ -147,6 +148,7 @@ const game = {
   // conversation
   threadOrder: [], threadIndex: 0, thread: null, lineIndex: 0,
   awaiting: false, expected: "", typingStart: null,
+  timedReply: false, replyTimer: 0, replyTimerMax: 0,
   // typing stats
   charsTyped: 0, typingMs: 0, correctChars: 0, expectedChars: 0,
   // run summary
@@ -286,6 +288,7 @@ function syncDifficultyButtons() {
   document.querySelectorAll("[data-mode]").forEach((b) => {
     b.classList.toggle("on", b.dataset.mode === game.difficulty.id);
   });
+  if (el.modeDesc) el.modeDesc.textContent = game.difficulty.label;
 }
 
 /* --- Garage --------------------------------------------------------------- */
@@ -421,12 +424,60 @@ function beginReply(text) {
   el.dock.classList.add("composing");
   el.dock.classList.remove("review", "perfect", "error");
   renderTypeBox("");
+  startSendTimer(text);
   focusInput();
 }
 function focusInput() {
   if (game.state === "playing" && game.awaiting) {
     window.requestAnimationFrame(() => { try { el.typeInput.focus({ preventScroll: true }); } catch (e) { el.typeInput.focus(); } });
   }
+}
+
+/* --- Send timer (Normal/Mayhem): reply before the bar empties -------------- */
+function sendTimeFor(text) {
+  const cfg = game.difficulty.send;
+  return cfg ? cfg.base + text.length * cfg.per : 0; // 0 = no timer (Chill)
+}
+function startSendTimer(text) {
+  const t = sendTimeFor(text);
+  game.timedReply = t > 0;
+  game.replyTimerMax = t;
+  game.replyTimer = t;
+  updateSendTimerUI();
+}
+function stopSendTimer() {
+  game.timedReply = false;
+  el.sendTimer.classList.remove("show");
+}
+function updateSendTimerUI() {
+  if (game.timedReply && game.awaiting && game.replyTimerMax > 0) {
+    el.sendTimer.classList.add("show");
+    const frac = clamp(game.replyTimer / game.replyTimerMax, 0, 1);
+    el.sendTimerFill.style.width = frac * 100 + "%";
+    el.sendTimerFill.className = "send-timer-fill" + (frac < 0.25 ? " danger" : frac < 0.5 ? " warn" : "");
+  } else {
+    el.sendTimer.classList.remove("show");
+  }
+}
+function replyTimeout() {
+  if (!game.awaiting) return;
+  stopSendTimer();
+  if (el.typeInput.value.length > 0) {
+    submitReply();                 // send what's typed — partial = penalty + combo break
+    return;
+  }
+  // nothing typed: the message is missed
+  breakCombo();
+  game.awaiting = false;
+  game.lineIndex += 1;
+  el.typeInput.value = "";
+  el.typeInput.disabled = true;
+  el.dock.classList.remove("composing", "ready");
+  el.dock.classList.add("error");
+  audio.typo();
+  banner("TOO SLOW", "Message missed", "");
+  updateHud();
+  schedule(advanceConversation, 800);
 }
 function onType() {
   if (!game.awaiting) return;
@@ -442,6 +493,7 @@ function submitReply() {
   if (game.state !== "playing" || !game.awaiting) return;
   const sent = el.typeInput.value;
   if (sent.length === 0) return; // ignore empty sends
+  stopSendTimer();
   const a = analyze(sent, game.expected);
   game.charsTyped += sent.length;
   game.typingMs += game.typingStart ? performance.now() - game.typingStart : 0;
@@ -485,6 +537,7 @@ function beginThread(index) {
   game.thread = getThread();
   game.lineIndex = 0;
   game.awaiting = false;
+  stopSendTimer();
   el.incoming.textContent = "…";
   el.typeBox.innerHTML = "";
   updateHud();
@@ -582,6 +635,13 @@ function update(dtRaw) {
     game.comboTimer -= dt;
     if (game.comboTimer <= 0) breakCombo();
   }
+
+  // send timer (Normal/Mayhem): must finish the reply before it runs out
+  if (game.timedReply && game.awaiting) {
+    game.replyTimer -= dt;
+    if (game.replyTimer <= 0) { game.replyTimer = 0; replyTimeout(); }
+  }
+  updateSendTimerUI();
 
   // run records
   const mph = mphOf(game.speed);
@@ -819,7 +879,6 @@ function drawCar(x, y, laneUnit, pal, facing, t, opts = {}) {
   const H = W * 1.5;
   const lw = Math.max(2, W * 0.07);
   const rot = opts.rot || 0;
-  const shear = opts.shear || 0;
   const topW = W * 0.66;                       // far end narrower (perspective)
   const nearY = H * 0.5, farY = -H * 0.5;
   const faceY = H * 0.18;                       // end-face spans faceY..nearY
@@ -832,8 +891,6 @@ function drawCar(x, y, laneUnit, pal, facing, t, opts = {}) {
   // ground shadow
   ctx.fillStyle = "rgba(0,0,0,0.18)";
   ctx.beginPath(); ctx.ellipse(0, nearY - H * 0.02, W * 0.6, H * 0.1, 0, 0, Math.PI * 2); ctx.fill();
-  // foreshorten toward the vanishing point (keeps the wheelbase flat on the road)
-  if (shear) ctx.transform(1, 0, shear, 1, 0, 0);
   if (rot) ctx.rotate(rot);
   ctx.lineJoin = "round"; ctx.lineCap = "round";
   ctx.lineWidth = lw; ctx.strokeStyle = ink;
@@ -971,9 +1028,8 @@ function drawPlayer() {
   const proj = project(PLAYER_DEPTH, game.currentLane);
   const steer = game.currentLane - game.targetLane;
   const bob = Math.sin(game.time * 10) * proj.laneUnit * 0.012;
-  const shear = laneShear(proj.x, proj.y);
-  // small steering bank when changing lanes (intentional, not a sideways tilt)
-  const rot = clamp(steer * 0.1, -0.14, 0.14);
+  // small steering bank only while actively changing lanes (brief, reads as juice)
+  const rot = clamp(steer * 0.08, -0.1, 0.1);
   const car = CARS.find((c) => c.id === profile.selectedCar) || CARS[0];
   let pal = { body: car.body, shade: car.shade, roof: car.roof };
   if (car.rainbow) {
@@ -999,7 +1055,7 @@ function drawPlayer() {
   ctx.save();
   // invulnerability blink
   if (game.invuln > 0 && Math.floor(game.time * 20) % 2 === 0) ctx.globalAlpha = 0.45;
-  drawCar(proj.x, proj.y + bob, proj.laneUnit * 1.05, pal, "rear", game.time, { rot, shear: shear * 0.6 });
+  drawCar(proj.x, proj.y + bob, proj.laneUnit * 1.05, pal, "rear", game.time, { rot });
   // shield bubble
   if (game.shield) {
     ctx.globalAlpha = 0.5 + Math.sin(game.time * 6) * 0.15;
@@ -1008,16 +1064,6 @@ function drawPlayer() {
     ctx.beginPath(); ctx.ellipse(proj.x, proj.y, proj.laneUnit * 0.7, proj.laneUnit * 0.95, 0, 0, Math.PI * 2); ctx.stroke();
   }
   ctx.restore();
-}
-
-// A car lying flat on the road is foreshortened toward the vanishing point
-// (screen-center, horizon). We apply a horizontal SHEAR — not a rotation — so
-// the far end slants toward the centre while the wheelbase stays flat on the
-// road. (A rotation would bank the car off its wheels, which looks wrong.)
-function laneShear(px, py) {
-  const vpx = game.width / 2, vpy = game.height * HORIZON_RATIO;
-  const denom = vpy - py;
-  return denom < -1 ? (vpx - px) / denom : 0;
 }
 
 function drawObjects() {
@@ -1036,7 +1082,7 @@ function drawObjects() {
     const proj = project(o.depth, o.lane);
     if (it.kind === "car") {
       const bob = Math.sin(game.time * 7 + o.bob) * proj.laneUnit * 0.02;
-      drawCar(proj.x, proj.y + bob, proj.laneUnit, o.pal, "front", game.time, { shear: laneShear(proj.x, proj.y) });
+      drawCar(proj.x, proj.y + bob, proj.laneUnit, o.pal, "front", game.time);
     } else if (it.kind === "coin") {
       drawCoin(proj.x, proj.y - proj.laneUnit * 0.5, proj.laneUnit, o.spin);
     } else {
@@ -1119,6 +1165,8 @@ function startGame() {
   game.threadOrder = shuffle(CONVERSATIONS.map((_, i) => i));
   game.threadIndex = 0;
 
+  game.timedReply = false; game.replyTimer = 0; game.replyTimerMax = 0;
+  stopSendTimer();
   el.dock.classList.add("active");
   el.dock.classList.remove("composing", "review", "perfect", "error", "ready");
   updateHud();
@@ -1143,6 +1191,7 @@ function resumeGame() {
 function crash(car) {
   game.state = "gameover";
   game.awaiting = false;
+  stopSendTimer();
   clearTasks();
   el.typeInput.disabled = true;
   el.dock.classList.remove("active", "composing");

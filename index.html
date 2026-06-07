@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css?v=13" />
+    <link rel="stylesheet" href="./styles.css?v=14" />
   </head>
   <body>
     <canvas id="game"></canvas>
@@ -52,6 +52,7 @@
     <!-- typing dock -->
     <div class="dock" id="dock">
       <div class="incoming" id="incoming">…</div>
+      <div class="send-timer" id="sendTimer"><div class="send-timer-fill" id="sendTimerFill"></div></div>
       <div class="type-area">
         <div class="type-box" id="typeBox"></div>
         <input id="typeInput" class="type-input" type="text" inputmode="text"
@@ -70,6 +71,7 @@
           <button class="mode" data-mode="normal">Normal</button>
           <button class="mode" data-mode="mayhem">Mayhem</button>
         </div>
+        <p class="mode-desc" id="modeDesc"></p>
         <button id="btnPlay" class="big-btn red">PLAY</button>
         <div class="row">
           <button id="btnGarage" class="ghost-btn">🚗 Garage</button>
@@ -156,8 +158,8 @@
       </div>
     </section>
 
-    <script src="./js/content.js?v=13"></script>
-    <script src="./js/audio.js?v=13"></script>
-    <script src="./js/game.js?v=13"></script>
+    <script src="./js/content.js?v=14"></script>
+    <script src="./js/audio.js?v=14"></script>
+    <script src="./js/game.js?v=14"></script>
   </body>
 </html>

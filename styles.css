@@ -270,6 +270,27 @@ b { font-weight: 700; }
   box-shadow: 0 4px 0 rgba(27, 27, 43, 0.18);
 }
 
+/* send-timer bar inside the message UI (hidden in Chill / when no reply active) */
+.send-timer {
+  display: none;
+  height: 12px;
+  margin-top: 10px;
+  background: rgba(27, 27, 43, 0.14);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.send-timer.show { display: block; }
+.send-timer-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  transition: width 0.08s linear, background 0.2s;
+}
+.send-timer-fill.warn { background: var(--yellow); }
+.send-timer-fill.danger { background: var(--red); }
+
 .type-area {
   position: relative;
   margin-top: 12px;
@@ -388,6 +409,7 @@ b { font-weight: 700; }
 }
 .mode:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .mode.on { background: var(--yellow); }
+.mode-desc { margin: -8px 0 16px; font-size: 0.85rem; color: #777; min-height: 1em; font-weight: 500; }
 
 .big-btn {
   display: inline-block;
