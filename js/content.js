@@ -161,6 +161,12 @@ const CONVERSATIONS = [
   },
 ];
 
+/* Nobody ends a text with a period. Strip trailing periods from every line
+   (keeps ? and ! and mid-message punctuation intact). */
+for (const thread of CONVERSATIONS) {
+  for (const line of thread.lines) line.text = line.text.replace(/\.+$/, "");
+}
+
 /* --- Unlockable cars (cosmetic) ------------------------------------------- */
 /* body = main flat color, shade = darker cel-shade tone, roof = cabin color.
    price in coins; the default car is free. Purely cosmetic — no balance edge. */

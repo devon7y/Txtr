@@ -15,7 +15,7 @@ const el = {
   comboWrap: $("comboWrap"), comboMult: $("comboMult"), comboCount: $("comboCount"), comboBar: $("comboBar"),
   threadName: $("threadName"), btnPause: $("btnPause"), btnMute: $("btnMute"),
   fxLayer: $("fxLayer"), bannerLayer: $("bannerLayer"), pickupRow: $("pickupRow"),
-  dock: $("dock"), incoming: $("incoming"), typeBox: $("typeBox"), typeInput: $("typeInput"), replyMeta: $("replyMeta"),
+  dock: $("dock"), incoming: $("incoming"), typeBox: $("typeBox"), typeInput: $("typeInput"),
   steerLeft: $("steerLeft"), steerRight: $("steerRight"),
   // screens
   screenStart: $("screenStart"), screenPause: $("screenPause"), screenOver: $("screenOver"),
@@ -421,7 +421,6 @@ function beginReply(text) {
   el.dock.classList.add("composing");
   el.dock.classList.remove("review", "perfect", "error");
   renderTypeBox("");
-  el.replyMeta.textContent = `Type the reply · ${text.length} chars · Enter to send`;
   focusInput();
 }
 function focusInput() {
@@ -438,10 +437,6 @@ function onType() {
   const a = analyze(v, game.expected);
   el.dock.classList.toggle("error", a.mistakes > 0);
   el.dock.classList.toggle("ready", a.perfect);
-  const pen = a.mistakes * 6;
-  el.replyMeta.textContent = a.perfect
-    ? "Perfect — hit Enter!"
-    : `${a.exactWords}/${a.wordCount} words clean · −${pen} if sent now`;
 }
 function submitReply() {
   if (game.state !== "playing" || !game.awaiting) return;
@@ -492,14 +487,13 @@ function beginThread(index) {
   game.awaiting = false;
   el.incoming.textContent = "…";
   el.typeBox.innerHTML = "";
-  el.replyMeta.textContent = "New conversation incoming";
   updateHud();
   schedule(advanceConversation, 700);
 }
 function advanceConversation() {
   if (game.state !== "playing" || !game.thread) return;
   if (game.lineIndex >= game.thread.lines.length) {
-    el.incoming.textContent = "Thread archived. Loading the next bad decision…";
+    el.incoming.textContent = "Thread archived — loading your next bad decision…";
     schedule(() => beginThread((game.threadIndex + 1) % game.threadOrder.length), 900);
     return;
   }
@@ -510,7 +504,6 @@ function advanceConversation() {
     game.lineIndex += 1;
     el.dock.classList.remove("composing", "review", "perfect", "error", "ready");
     el.typeBox.innerHTML = "";
-    el.replyMeta.textContent = "…";
     schedule(advanceConversation, 850 + Math.min(1100, line.text.length * 16));
   } else {
     beginReply(line.text);
@@ -546,11 +539,11 @@ function spawnWave() {
   if (open.length) {
     const lane = pick(open);
     const roll = rng();
-    if (roll < 0.07) {
+    if (roll < 0.018) {
       game.pickups.push(makePickup(lane, "shield"));
-    } else if (roll < 0.12) {
+    } else if (roll < 0.032) {
       game.pickups.push(makePickup(lane, "magnet"));
-    } else if (roll < 0.17) {
+    } else if (roll < 0.05) {
       game.pickups.push(makePickup(lane, "boost"));
     } else {
       const chain = rng() < 0.5 ? randInt(2, 4) : 1;
@@ -661,7 +654,6 @@ function onNearMiss(car) {
   game.run.nearMisses += 1;
   addCombo(1);
   const gained = addScore(120);
-  game.slowmo = Math.max(game.slowmo, 0.18);
   audio.nearMiss();
   const p = project(PLAYER_DEPTH, car.lane);
   popup(`NEAR MISS +${gained}`, p.x, p.y - p.laneUnit, "near");
@@ -740,30 +732,16 @@ function drawBackground() {
   grass.addColorStop(1, "#2d6a4f");
   ctx.fillStyle = grass;
   ctx.fillRect(0, horizonY, w, h - horizonY);
-  // grass scroll stripes
-  drawGrassStripes();
 }
+// Clean cartoon cloud: a dark silhouette drawn slightly larger, then white
+// blobs on top — gives one crisp outer outline with no internal seams.
 function cloud(x, y, s) {
-  ctx.beginPath();
-  ctx.arc(x, y, s, 0, Math.PI * 2);
-  ctx.arc(x + s, y + s * 0.2, s * 0.8, 0, Math.PI * 2);
-  ctx.arc(x - s, y + s * 0.2, s * 0.75, 0, Math.PI * 2);
-  ctx.arc(x + s * 0.4, y - s * 0.4, s * 0.7, 0, Math.PI * 2);
-  ctx.fill(); ctx.stroke();
-}
-function drawGrassStripes() {
-  // alternating bands using projected depth for a sense of speed on the verge
-  const w = game.width;
-  const STEP = 1.1;
-  const phase = (game.scroll * 0.5) % (STEP * 2);
-  for (let d = ROAD_FAR; d > 0; d -= STEP) {
-    const dd = d - (phase % STEP);
-    if (dd <= 0) continue;
-    const band = Math.floor((d + game.scroll * 0.5) / STEP) % 2 === 0;
-    const near = project(dd, 0); const far = project(dd + STEP * 0.5, 0);
-    ctx.fillStyle = band ? "rgba(73,180,140,0.0)" : "rgba(45,106,79,0.35)";
-    ctx.fillRect(0, far.y, w, near.y - far.y);
-  }
+  const parts = [[0, 0, s], [s, s * 0.18, s * 0.78], [-s, s * 0.18, s * 0.72], [s * 0.45, -s * 0.42, s * 0.64], [-s * 0.55, -s * 0.18, s * 0.54]];
+  const ow = Math.max(2.5, s * 0.16);
+  ctx.fillStyle = "#1b1b2b";
+  for (const [dx, dy, r] of parts) { ctx.beginPath(); ctx.arc(x + dx, y + dy, r + ow, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = "#ffffff";
+  for (const [dx, dy, r] of parts) { ctx.beginPath(); ctx.arc(x + dx, y + dy, r, 0, Math.PI * 2); ctx.fill(); }
 }
 
 function roadEdgeX(depth, side) {
@@ -797,8 +775,8 @@ function drawRoad() {
   drawEdgeLine(-1, "#ffd23f");
   drawEdgeLine(1, "#ffd23f");
 
-  // dashed lane dividers
-  for (let div = 0.5; div < LANE_COUNT - 0.5 + 0.01; div += 1) drawLaneDashes(div);
+  // dashed lane dividers (only the 4 interior dividers, never the road edges)
+  for (let div = 0.5; div < LANE_COUNT - 1; div += 1) drawLaneDashes(div);
 }
 function drawEdgeLine(side, color) {
   const h = game.height;
@@ -830,81 +808,117 @@ function drawLaneDashes(lane) {
   }
 }
 
-/* --- Cartoon car ---------------------------------------------------------- */
+/* --- Cartoon car (chunky 3/4 view down the road) -------------------------- */
+// Drawn as a rounded trapezoid: wider at the near end (bottom), narrower at the
+// far end (top), so it reads as a real car seen from behind/ahead at the road's
+// angle. The near vertical end-face is shaded darker; the top surface (roof/
+// hood) catches light. facing "rear" = player (taillights); "front" = oncoming.
 function drawCar(x, y, laneUnit, pal, facing, t, opts = {}) {
-  const carW = laneUnit * 0.84;
-  if (carW < 4) return;
-  const carH = carW * 1.5;
-  const lw = Math.max(2, carW * 0.085);
+  const W = laneUnit * 0.8;
+  if (W < 4) return;
+  const H = W * 1.5;
+  const lw = Math.max(2, W * 0.07);
   const rot = opts.rot || 0;
+  const topW = W * 0.66;                       // far end narrower (perspective)
+  const nearY = H * 0.5, farY = -H * 0.5;
+  const faceY = H * 0.18;                       // end-face spans faceY..nearY
+  const r = W * 0.16;
+  const widthAt = (yy) => lerp(W, topW, (nearY - yy) / (nearY - farY));
+  const ink = "#1b1b2b";
+
   ctx.save();
   ctx.translate(x, y);
-  // shadow
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
-  ctx.beginPath(); ctx.ellipse(0, carH * 0.42, carW * 0.62, carH * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+  // ground shadow
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  ctx.beginPath(); ctx.ellipse(0, nearY - H * 0.02, W * 0.6, H * 0.1, 0, 0, Math.PI * 2); ctx.fill();
   ctx.rotate(rot);
-  ctx.lineJoin = "round";
-  ctx.lineWidth = lw;
-  ctx.strokeStyle = "#1b1b2b";
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.lineWidth = lw; ctx.strokeStyle = ink;
 
-  // body
-  const bodyGrad = pal.body;
-  ctx.fillStyle = bodyGrad;
-  roundRect(ctx, -carW / 2, -carH / 2, carW, carH, carW * 0.28);
+  // wheels first, so they poke out behind the body
+  const wheel = (cx, cy, ww, hh) => {
+    ctx.fillStyle = "#17171f";
+    roundRect(ctx, cx - ww / 2, cy - hh / 2, ww, hh, Math.min(ww, hh) * 0.4);
+    ctx.fill(); ctx.stroke();
+  };
+  const rwW = W * 0.17, rwH = H * 0.2;
+  wheel(-W * 0.5, nearY - rwH * 0.6, rwW, rwH);
+  wheel(W * 0.5, nearY - rwH * 0.6, rwW, rwH);
+  const fwW = rwW * 0.82, fwH = rwH * 0.82;
+  const fwX = widthAt(farY + H * 0.28) / 2;
+  wheel(-fwX, farY + H * 0.3, fwW, fwH);
+  wheel(fwX, farY + H * 0.3, fwW, fwH);
+
+  // body silhouette (rounded trapezoid)
+  const body = () => {
+    ctx.beginPath();
+    ctx.moveTo(-W / 2 + r, nearY);
+    ctx.lineTo(W / 2 - r, nearY);
+    ctx.quadraticCurveTo(W / 2, nearY, W / 2, nearY - r);
+    ctx.lineTo(topW / 2, farY + r);
+    ctx.quadraticCurveTo(topW / 2, farY, topW / 2 - r * 0.7, farY);
+    ctx.lineTo(-topW / 2 + r * 0.7, farY);
+    ctx.quadraticCurveTo(-topW / 2, farY, -topW / 2, farY + r);
+    ctx.lineTo(-W / 2, nearY - r);
+    ctx.quadraticCurveTo(-W / 2, nearY, -W / 2 + r, nearY);
+    ctx.closePath();
+  };
+  body();
+  ctx.fillStyle = pal.body;
   ctx.fill(); ctx.stroke();
 
-  // cel shade (lower portion darker)
+  // shade the near vertical end-face; gloss the top surface
   ctx.save();
-  roundRect(ctx, -carW / 2, -carH / 2, carW, carH, carW * 0.28);
-  ctx.clip();
+  body(); ctx.clip();
   ctx.fillStyle = pal.shade;
-  ctx.fillRect(-carW / 2, carH * 0.06, carW, carH);
-  // glossy top streak
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
-  roundRect(ctx, -carW * 0.34, -carH * 0.42, carW * 0.3, carH * 0.7, carW * 0.14);
-  ctx.fill();
+  ctx.fillRect(-W / 2, faceY, W, nearY - faceY);
+  const gloss = ctx.createLinearGradient(0, farY, 0, faceY);
+  gloss.addColorStop(0, "rgba(255,255,255,0.26)");
+  gloss.addColorStop(1, "rgba(255,255,255,0.05)");
+  ctx.fillStyle = gloss;
+  ctx.fillRect(-W / 2, farY, W, faceY - farY);
   ctx.restore();
 
-  // cabin / windows
-  ctx.fillStyle = "#16263b";
-  if (facing === "front") {
-    // windshield near top, headlights at the bottom (front faces camera)
-    roundRect(ctx, -carW * 0.32, -carH * 0.30, carW * 0.64, carH * 0.34, carW * 0.12);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "rgba(141,225,255,0.55)";
-    roundRect(ctx, -carW * 0.26, -carH * 0.26, carW * 0.52, carH * 0.16, carW * 0.08);
-    ctx.fill();
-    // headlights
-    ctx.fillStyle = "#fff7cc";
-    roundRect(ctx, -carW * 0.40, carH * 0.30, carW * 0.20, carH * 0.10, carW * 0.05); ctx.fill(); ctx.stroke();
-    roundRect(ctx, carW * 0.20, carH * 0.30, carW * 0.20, carH * 0.10, carW * 0.05); ctx.fill(); ctx.stroke();
-    // grille
-    ctx.fillStyle = "#101826";
-    roundRect(ctx, -carW * 0.16, carH * 0.32, carW * 0.32, carH * 0.07, carW * 0.03); ctx.fill();
-  } else {
-    // rear window near top, taillights at the bottom (we see the back)
-    roundRect(ctx, -carW * 0.30, -carH * 0.26, carW * 0.60, carH * 0.30, carW * 0.12);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "rgba(141,225,255,0.40)";
-    roundRect(ctx, -carW * 0.24, -carH * 0.22, carW * 0.48, carH * 0.13, carW * 0.07);
-    ctx.fill();
-    // taillights
-    ctx.fillStyle = "#ff5566";
-    roundRect(ctx, -carW * 0.42, carH * 0.28, carW * 0.22, carH * 0.10, carW * 0.05); ctx.fill(); ctx.stroke();
-    roundRect(ctx, carW * 0.20, carH * 0.28, carW * 0.22, carH * 0.10, carW * 0.05); ctx.fill(); ctx.stroke();
-  }
-  // roof color accent
-  ctx.fillStyle = pal.roof;
-  roundRect(ctx, -carW * 0.18, -carH * 0.46, carW * 0.36, carH * 0.12, carW * 0.06);
-  ctx.fill(); ctx.stroke();
+  // edge where the end-face meets the top surface
+  const fW = widthAt(faceY);
+  ctx.beginPath(); ctx.moveTo(-fW / 2, faceY); ctx.lineTo(fW / 2, faceY); ctx.stroke();
 
-  // wheels
-  ctx.fillStyle = "#15151c";
-  const ww = carW * 0.16, wh = carH * 0.26;
-  roundRect(ctx, -carW / 2 - ww * 0.4, -carH * 0.22, ww, wh, ww * 0.4); ctx.fill(); ctx.stroke();
-  roundRect(ctx, carW / 2 - ww * 0.6, -carH * 0.22, ww, wh, ww * 0.4); ctx.fill(); ctx.stroke();
-  roundRect(ctx, -carW / 2 - ww * 0.4, carH * 0.04, ww, wh, ww * 0.4); ctx.fill(); ctx.stroke();
-  roundRect(ctx, carW / 2 - ww * 0.6, carH * 0.04, ww, wh, ww * 0.4); ctx.fill(); ctx.stroke();
+  // cabin glass
+  const gBotY = faceY - H * 0.03, gTopY = farY + H * 0.32;
+  const gbW = widthAt(gBotY) * 0.78, gtW = widthAt(gTopY) * 0.74;
+  ctx.fillStyle = facing === "front" ? "#bfe6ff" : "#21384f";
+  ctx.beginPath();
+  ctx.moveTo(-gbW / 2, gBotY); ctx.lineTo(gbW / 2, gBotY);
+  ctx.lineTo(gtW / 2, gTopY); ctx.lineTo(-gtW / 2, gTopY);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // roof accent strip (uses the car's roof colour)
+  const rTopY = farY + H * 0.03, rBotY = gTopY;
+  const rtW = widthAt(rTopY) * 0.68, rbW = widthAt(rBotY) * 0.72;
+  ctx.fillStyle = pal.roof;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.moveTo(-rbW / 2, rBotY); ctx.lineTo(rbW / 2, rBotY);
+  ctx.lineTo(rtW / 2, rTopY); ctx.lineTo(-rtW / 2, rTopY);
+  ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // lights + details on the end-face
+  const faceH = nearY - faceY;
+  const lY = nearY - faceH * 0.46, lH = faceH * 0.34, lW = W * 0.2;
+  if (facing === "front") {
+    ctx.fillStyle = "#fff3b0";
+    roundRect(ctx, -W * 0.42, lY - lH / 2, lW, lH, lH * 0.3); ctx.fill(); ctx.stroke();
+    roundRect(ctx, W * 0.42 - lW, lY - lH / 2, lW, lH, lH * 0.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#10141d";
+    roundRect(ctx, -W * 0.17, lY - lH * 0.28, W * 0.34, lH * 0.56, lH * 0.2); ctx.fill();
+  } else {
+    ctx.fillStyle = "#ff4d5e";
+    roundRect(ctx, -W * 0.44, lY - lH / 2, lW, lH, lH * 0.3); ctx.fill(); ctx.stroke();
+    roundRect(ctx, W * 0.44 - lW, lY - lH / 2, lW, lH, lH * 0.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#f4f4ea";
+    roundRect(ctx, -W * 0.13, nearY - faceH * 0.36, W * 0.26, faceH * 0.22, 2); ctx.fill(); ctx.stroke();
+  }
 
   ctx.restore();
 }
@@ -1205,12 +1219,9 @@ function moveLane(dir) {
 window.addEventListener("keydown", (e) => {
   const k = e.key;
   const playing = game.state === "playing";
-  // Arrow keys always steer (they never type). A/D only steer when NOT typing a
-  // reply, otherwise they'd block typing words containing 'a'/'d'.
+  // Only the arrow keys steer — letter keys are reserved for typing replies.
   if (k === "ArrowLeft") { if (playing) { e.preventDefault(); moveLane(-1); } return; }
   if (k === "ArrowRight") { if (playing) { e.preventDefault(); moveLane(1); } return; }
-  if (!game.awaiting && (k === "a" || k === "A")) { if (playing) { e.preventDefault(); moveLane(-1); } return; }
-  if (!game.awaiting && (k === "d" || k === "D")) { if (playing) { e.preventDefault(); moveLane(1); } return; }
 
   if (k === "Enter") {
     if (game.awaiting) { e.preventDefault(); submitReply(); }
@@ -1255,6 +1266,19 @@ canvas.addEventListener("pointerdown", (e) => {
   else if (x > 0.67) moveLane(1);
   if (game.awaiting) focusInput();
 });
+
+// horizontal trackpad swipe (two-finger swipe / horizontal scroll) changes lanes —
+// lets laptop players steer without the A/D keys they need for typing.
+let swipeCooldown = 0;
+window.addEventListener("wheel", (e) => {
+  if (game.state !== "playing") return;
+  if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return; // ignore vertical scroll
+  e.preventDefault();
+  const now = performance.now();
+  if (now < swipeCooldown) return;
+  if (e.deltaX > 8) { moveLane(1); swipeCooldown = now + 180; }
+  else if (e.deltaX < -8) { moveLane(-1); swipeCooldown = now + 180; }
+}, { passive: false });
 
 /* --- Buttons -------------------------------------------------------------- */
 function wire(node, fn) { if (node) node.addEventListener("click", fn); }
