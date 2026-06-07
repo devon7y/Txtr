@@ -2,172 +2,163 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Txtr</title>
-    <link rel="stylesheet" href="./styles.css?v=3" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#4cc9f0" />
+    <title>Txtr — Texting &amp; Driving</title>
+    <meta name="description" content="A Temple Run-inspired typing game about texting and driving. Dodge five lanes of traffic, chain combos, and type your way to the high score." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='84' height='84' rx='24' fill='%23ff4d5e' stroke='%231b1b2b' stroke-width='8'/%3E%3Ctext x='50' y='72' font-family='Arial,sans-serif' font-size='62' font-weight='bold' text-anchor='middle' fill='%23fff'%3ET%3C/text%3E%3C/svg%3E" />
+    <meta property="og:title" content="Txtr — Texting &amp; Driving" />
+    <meta property="og:description" content="Dodge traffic while typing your texts. A Temple Run-inspired typing game. How long can you last?" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css?v=10" />
   </head>
   <body>
-    <div class="app-shell">
-      <div class="scene-glow scene-glow--one"></div>
-      <div class="scene-glow scene-glow--two"></div>
+    <canvas id="game"></canvas>
 
-      <main class="game-frame">
-        <header class="topbar card">
-          <div class="brand-lockup">
-            <div class="brand-mark">Txtr</div>
-            <div class="brand-copy">
-              <h1>Texting. Driving. Regrettable multitasking.</h1>
-              <p>Type to respond to the text messages and use the left/right arrow keys to avoid traffic!</p>
-            </div>
-          </div>
-
-          <div class="score-strip">
-            <div class="stat-pill">
-              <span>Score</span>
-              <strong id="scoreValue">0</strong>
-            </div>
-            <div class="stat-pill">
-              <span>Coins</span>
-              <strong id="coinValue">0</strong>
-            </div>
-            <div class="stat-pill">
-              <span>Texts</span>
-              <strong id="textValue">0</strong>
-            </div>
-            <div class="stat-pill">
-              <span>Best</span>
-              <strong id="bestValue">0</strong>
-            </div>
-          </div>
-        </header>
-
-        <section class="layout">
-          <section class="road-stage card">
-            <canvas id="gameCanvas" aria-label="Driving game canvas"></canvas>
-
-            <div class="road-hud">
-              <div class="road-indicator">
-                <span>Speed</span>
-                <strong id="speedValue">62 mph</strong>
-              </div>
-              <div class="road-indicator">
-                <span>Lane</span>
-                <strong id="laneValue">3 / 5</strong>
-              </div>
-              <div class="road-indicator">
-                <span>Thread</span>
-                <strong id="threadValue">Standing By</strong>
-              </div>
-              <div class="road-indicator">
-                <span>WPM</span>
-                <strong id="wpmValue">—</strong>
-              </div>
-            </div>
-
-            <div class="message-overlay">
-              <div class="message-bubble message-bubble--incoming" id="incomingBubble">Press Start to begin.</div>
-
-              <form class="composer composer--road" id="composer">
-                <div class="composer-field composer-field--road">
-                  <div class="composer-mirror" id="replyMirror" aria-hidden="true"></div>
-                  <input
-                    id="replyInput"
-                    type="text"
-                    autocomplete="off"
-                    autocapitalize="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                    disabled
-                  />
-                </div>
-                <button id="sendButton" type="submit" disabled>Send</button>
-              </form>
-
-              <div class="composer-note" id="composerNote">
-                Left and right arrow keys still steer while the message field is focused.
-              </div>
-            </div>
-
-            <div class="steer-pad">
-              <button id="leftButton" type="button" aria-label="Move left">Left</button>
-              <button id="rightButton" type="button" aria-label="Move right">Right</button>
-            </div>
-          </section>
-        </section>
-      </main>
-
-      <section class="overlay visible" id="startScreen">
-        <div class="overlay-card">
-          <p class="overlay-eyebrow">TXTR</p>
-          <h2>Drive first. Text second. Do both anyway.</h2>
-          <p class="overlay-copy">
-            You are in a red supercar on the wrong side of a five-lane highway. Shift lanes with the arrow
-            keys, scoop up coins, and complete a string of absurd conversations by typing each scripted reply.
-          </p>
-
-          <div class="overlay-grid">
-            <div class="overlay-item">
-              <strong>Steer</strong>
-              <span>Use the left and right arrow keys or the on-screen buttons.</span>
-            </div>
-            <div class="overlay-item">
-              <strong>Type</strong>
-              <span>The scripted reply sits in the message field. Wrong or missing characters cost 10 points each.</span>
-            </div>
-            <div class="overlay-item">
-              <strong>Survive</strong>
-              <span>The road gets faster forever. One crash ends the run.</span>
-            </div>
-          </div>
-
-          <div class="overlay-footer">
-            <div class="best-readout">
-              <span>Best score</span>
-              <strong id="startBestValue">0</strong>
-            </div>
-            <button class="primary-button" id="startButton" type="button">Start Game</button>
-          </div>
+    <!-- HUD -->
+    <div class="hud" id="hud">
+      <div class="hud-left">
+        <div class="chip"><span class="chip-ico">🪙</span><b id="coinVal">0</b></div>
+        <div class="chip"><b id="mphVal">0</b><span class="chip-unit">mph</span></div>
+      </div>
+      <div class="hud-center">
+        <div class="score-big" id="scoreVal">0</div>
+        <div class="score-sub">BEST <b id="bestVal">0</b> · <span id="threadName">—</span></div>
+        <div class="combo" id="comboWrap">
+          <div class="combo-mult" id="comboMult">x1.0</div>
+          <div class="combo-count" id="comboCount">0 combo</div>
+          <div class="combo-bar"><div class="combo-bar-fill" id="comboBar"></div></div>
         </div>
-      </section>
-
-      <section class="overlay" id="gameOverScreen">
-        <div class="overlay-card overlay-card--compact">
-          <p class="overlay-eyebrow">RUN OVER</p>
-          <h2>You texted into oncoming traffic.</h2>
-          <p class="overlay-copy" id="gameOverSummary">Score pending.</p>
-
-          <div class="summary-grid">
-            <div class="summary-item">
-              <span>Score</span>
-              <strong id="finalScoreValue">0</strong>
-            </div>
-            <div class="summary-item">
-              <span>Coins</span>
-              <strong id="finalCoinValue">0</strong>
-            </div>
-            <div class="summary-item">
-              <span>Texts</span>
-              <strong id="finalTextValue">0</strong>
-            </div>
-            <div class="summary-item">
-              <span>Best</span>
-              <strong id="finalBestValue">0</strong>
-            </div>
-            <div class="summary-item">
-              <span>Avg WPM</span>
-              <strong id="finalWpmValue">—</strong>
-            </div>
-            <div class="summary-item">
-              <span>Accuracy</span>
-              <strong id="finalAccuracyValue">—</strong>
-            </div>
-          </div>
-
-          <button class="primary-button" id="restartButton" type="button">Try Again</button>
-        </div>
-      </section>
+        <div class="pickup-row" id="pickupRow"></div>
+      </div>
+      <div class="hud-right">
+        <button id="btnPause" class="icon-btn" aria-label="Pause">⏸</button>
+        <button id="btnMute" class="icon-btn" aria-label="Mute">🔊</button>
+      </div>
     </div>
 
-    <script src="./script.js?v=3"></script>
+    <!-- floating effects -->
+    <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
+    <div class="banner-layer" id="bannerLayer" aria-hidden="true"></div>
+
+    <!-- touch steering -->
+    <button id="steerLeft" class="steer steer-left" aria-label="Steer left">◀</button>
+    <button id="steerRight" class="steer steer-right" aria-label="Steer right">▶</button>
+
+    <!-- typing dock -->
+    <div class="dock" id="dock">
+      <div class="incoming" id="incoming">…</div>
+      <div class="type-area">
+        <div class="type-box" id="typeBox"></div>
+        <input id="typeInput" class="type-input" type="text" inputmode="text"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+               aria-label="Type your reply" disabled />
+      </div>
+      <div class="reply-meta" id="replyMeta"></div>
+    </div>
+
+    <!-- START -->
+    <section class="screen show" id="screenStart">
+      <div class="panel">
+        <div class="logo">Txtr</div>
+        <p class="tagline">Texting &amp; driving. What could possibly go wrong?</p>
+        <div class="modes" role="group" aria-label="Difficulty">
+          <button class="mode" data-mode="chill">Chill</button>
+          <button class="mode" data-mode="normal">Normal</button>
+          <button class="mode" data-mode="mayhem">Mayhem</button>
+        </div>
+        <button id="btnPlay" class="big-btn red">PLAY</button>
+        <div class="row">
+          <button id="btnGarage" class="ghost-btn">🚗 Garage</button>
+          <button id="btnTrophies" class="ghost-btn">🏆 Trophies</button>
+          <button id="btnDaily" class="ghost-btn">📅 Daily <b id="dailyState">OFF</b></button>
+        </div>
+        <div class="start-foot">
+          <span>Best <b id="startBest">0</b></span>
+          <span>🪙 <b id="startCoins">0</b></span>
+        </div>
+        <p class="hint">Type the replies · <b>← →</b> or <b>A / D</b> to steer · <b>Enter</b> to send · <b>P</b> to pause</p>
+      </div>
+    </section>
+
+    <!-- PAUSE -->
+    <section class="screen" id="screenPause">
+      <div class="panel panel-sm">
+        <div class="panel-title">Paused</div>
+        <button id="btnResume" class="big-btn green">Resume</button>
+        <div class="row">
+          <button id="btnRestartPause" class="ghost-btn">Restart</button>
+          <button id="btnMenuPause" class="ghost-btn">Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME OVER -->
+    <section class="screen" id="screenOver">
+      <div class="panel">
+        <div class="over-title" id="overTitle">WRECKED</div>
+        <div class="over-score-wrap">
+          <div class="over-score" id="overScore">0</div>
+          <span class="newbest" id="overNewBest">NEW BEST</span>
+        </div>
+        <div class="summary">
+          <div class="sitem"><span>🪙 Coins</span><b id="overCoinsEarned">0</b></div>
+          <div class="sitem"><span>Texts</span><b id="overTexts">0</b></div>
+          <div class="sitem"><span>Near misses</span><b id="overNear">0</b></div>
+          <div class="sitem"><span>Best combo</span><b id="overCombo">x1</b></div>
+          <div class="sitem"><span>Accuracy</span><b id="overAcc">—</b></div>
+          <div class="sitem"><span>WPM</span><b id="overWpm">—</b></div>
+          <div class="sitem sitem-wide"><span>Distance</span><b id="overDist">0 m</b></div>
+        </div>
+        <div id="overUnlocks" class="unlocks"></div>
+        <button id="btnRetry" class="big-btn red">RETRY</button>
+        <div class="row">
+          <button id="btnGarageOver" class="ghost-btn">🚗 Garage</button>
+          <button id="btnMenuOver" class="ghost-btn">Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GARAGE -->
+    <section class="screen" id="screenGarage">
+      <div class="panel panel-wide">
+        <div class="panel-head">
+          <div class="panel-title">Garage</div>
+          <div class="coin-bal">🪙 <b id="garageCoins">0</b></div>
+        </div>
+        <div class="car-grid" id="garageGrid"></div>
+        <button id="btnGarageBack" class="ghost-btn">Back</button>
+      </div>
+    </section>
+
+    <!-- TROPHIES -->
+    <section class="screen" id="screenTrophies">
+      <div class="panel panel-wide">
+        <div class="panel-title">Trophies</div>
+        <div class="trophy-cols">
+          <div class="tcol">
+            <h3>Leaderboard</h3>
+            <ol id="leaderList" class="leader"></ol>
+          </div>
+          <div class="tcol">
+            <h3>Achievements</h3>
+            <div id="achList" class="ach-list"></div>
+          </div>
+          <div class="tcol">
+            <h3>Lifetime Stats</h3>
+            <div id="statList" class="stat-list"></div>
+          </div>
+        </div>
+        <button id="btnTrophiesBack" class="ghost-btn">Back</button>
+      </div>
+    </section>
+
+    <script src="./js/content.js?v=10"></script>
+    <script src="./js/audio.js?v=10"></script>
+    <script src="./js/game.js?v=10"></script>
   </body>
 </html>
